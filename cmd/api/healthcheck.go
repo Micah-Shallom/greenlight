@@ -14,16 +14,17 @@ func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 	// js := `{"status": "available", "environment": %q, "version": %q}`
 	// js = fmt.Sprintf(js, app.config.env, version)
 
-	data := map[string]string{
+	env := envelope{
 		"status": "available",
-		"environment": app.config.env,
-		"version": version,
+		"system_info": map[string]string{
+			"environment": app.config.env,
+			"version": version,
+		},
 	}
 
-	//marshal data into an encoded json object
-	err := app.writeJSON(w, http.StatusOK, data, nil)
+	//marshal env into an encoded json object
+	err := app.writeJSON(w, http.StatusOK, env, nil)
 	if err != nil {
-		app.logger.Print(err)
-		http.Error(w, "The server encountered a problem and could not process your request", http.StatusInternalServerError)
+		app.serverErrorResponse(w, r, err)
 	}
 }
