@@ -1,0 +1,19 @@
+migrate create -seq -ext=.sql -dir=./migrations create_movies_table
+migrate create -seq -ext=.sql -dir=./migrations add_movies_check_constraints
+
+
+//create migration
+migrate -path=./migrations -database=$GREENLIGHT_DB_DSN up
+
+//move between versions using
+migrate -path=./migrations -database=$GREENLIGHT_DB_DSN goto 1
+
+//executing down migrations
+migrate -path=./migrations -database=$GREENLIGHT_DB_DSN down 1
+
+
+//the way migrate works is that if on running a mgration script and there is an error ecountered along the way, the script will be applied partially resulting to a dirty script....in this scenerio, we need to force down migrate by 1
+
+migrate -path=./migrations -database=$GREENLIGHT_DB_DSN force 1
+
+
