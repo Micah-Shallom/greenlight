@@ -6,6 +6,7 @@ import (
 )
 
 func (app *application) logError(r *http.Request, err error) {
+	_ = r
 	app.logger.Print(err)
 }
 

@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Micah-Shallom/internal/data"
 	_ "github.com/lib/pq"
 )
 
@@ -29,6 +30,7 @@ type config struct {
 type application struct {
 	config config
 	logger *log.Logger
+	models data.Models
 }
 
 func main() {
@@ -59,9 +61,13 @@ func main() {
 	logger.Printf("database connection established")
 
 	//declare an instance of the appliction struct , containing the config struct and the logger
+	//use the data.NewModels() function to initialize a Models struct, passing in the connection pool as a parameter.
+	//app.models.Movies.Insert(...)
+	
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	srv := &http.Server{
