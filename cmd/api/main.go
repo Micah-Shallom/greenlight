@@ -81,7 +81,6 @@ func main() {
 	logger.Printf("starting %s server on %s", cfg.env, srv.Addr)
 	err = srv.ListenAndServe()
 	logger.Fatal(err)
-
 }
 
 func openDB(cfg config) (*sql.DB, error) {

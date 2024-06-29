@@ -129,11 +129,17 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	//Declare an input struct to hold the expected data from the client
+	//used pointers for  Title year and runtime because since the default value of a pointer is nil, we can use that to check if that particular field is empty via nil
+	//it solves this problem How do we tell the difference between:
+	// A client providing a key/value pair which has a zero-value value — like {"title": ""} —
+	// in which case we want to return a validation error.
+	// A client not providing a key/value pair in their JSON at all — in which case we want to
+	// ‘skip’ updating the field but not send a validation error.
 	var input struct {
-		Title   string       `json:"title"`
-		Year    int32        `json:"year"`
-		Runtime data.Runtime `json:"runtime"`
-		Genres  []string     `json:"genres"`
+		Title   *string       `json:"title"`
+		Year    *int32        `json:"year"`
+		Runtime *data.Runtime `json:"runtime"`
+		Genres  []string      `json:"genres"`
 	}
 
 	//Read the JSON request body data into the input struct
@@ -144,10 +150,29 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	//Copy the values from the request body to the appropriate fields of the movie record
-	movie.Title = input.Title
-	movie.Year = input.Year
-	movie.Runtime = input.Runtime
-	movie.Genres = input.Genres
+	// movie.Title = input.Title
+	// movie.Year = input.Year
+	// movie.Runtime = input.Runtime
+	// movie.Genres = input.Genres
+
+	// If the input.Title value is nil then we know that no corresponding "title" key/
+	// value pair was provided in the JSON request body. So we move on and leave the
+	// movie record unchanged. Otherwise, we update the movie record with the new title
+	// value. Importantly, because input.Title is a now a pointer to a string, we need
+	// to dereference the pointer using the * operator to get the underlying value
+	// before assigning it to our movie record.
+	if input.Title != nil {
+		movie.Title = *input.Title
+	}
+	if input.Year != nil {
+		movie.Year = *input.Year
+	}
+	if input.Runtime != nil {
+		movie.Runtime = *input.Runtime
+	}
+	if input.Genres != nil {
+		movie.Genres = input.Genres // Note that we don't need to dereference a slice.
+	}
 
 	//validate the updated movie record, sending the client a 422 unprocessable entity response if any checks fail
 	v := validator.New()
@@ -171,7 +196,7 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (app *application) deleteMovieHandler (w http.ResponseWriter, r *http.Request){
+func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
@@ -180,7 +205,7 @@ func (app *application) deleteMovieHandler (w http.ResponseWriter, r *http.Reque
 
 	err = app.models.Movies.Delete(id)
 	if err != nil {
-		switch{
+		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
 		default:
@@ -189,8 +214,8 @@ func (app *application) deleteMovieHandler (w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"message":"movie successfully deleted"}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "movie successfully deleted"}, nil)
 	if err != nil {
-		app.serverErrorResponse(w,r, err)
+		app.serverErrorResponse(w, r, err)
 	}
 }
