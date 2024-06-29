@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/Micah-Shallom/internal/data"
 	"github.com/Micah-Shallom/internal/validator"
@@ -117,15 +118,28 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Intercept any ErrEditConflict error and call the new editConflictResponse()
+	// helper
 	movie, err := app.models.Movies.Get(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
 		default:
 			app.serverErrorResponse(w, r, err)
 		}
 		return
+	}
+
+	// If the request contains a X-Expected-Version header, verify that the movie
+	// version in the database matches the expected version specified in the header.
+	if r.Header.Get("X-Expected-Version") != "" {
+		if strconv.FormatInt(int64(movie.Version), 32) != r.Header.Get("X-Expected-Version") {
+			app.editConflictResponse(w, r)
+			return
+		}
 	}
 
 	//Declare an input struct to hold the expected data from the client
